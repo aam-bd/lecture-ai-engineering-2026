@@ -30,3 +30,21 @@ def test_follow_up_questions_share_chat_history(monkeypatch):
     ask_module.main()
 
     assert messages == ["What is MCP?", "Why is it useful?"]
+
+
+def test_ask_can_pass_temperature_config(monkeypatch):
+    recorded = {}
+
+    class FakeChat:
+        def send_message(self, message, config=None):
+            recorded["message"] = message
+            recorded["config"] = config
+            return SimpleNamespace(text="done")
+
+    chat = FakeChat()
+
+    result = ask_module.ask("What is MCP?", chat=chat, temperature=0.7)
+
+    assert result == "done"
+    assert recorded["message"] == "What is MCP?"
+    assert recorded["config"].temperature == 0.7

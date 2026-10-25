@@ -16,8 +16,18 @@
 ### Basic
 - Level attempted: Basic
 - What I did: I changed the model three times: gemini-3.5-flash-lite, gemini-3.5-flash, gemini-3.1-flash-lite
-- Results: Each models answer perfectly in different approach. 
-- Observations / questions: What is MCP server? Each model answers in different approach although the core concepts are same.
+- Results: Each model answered with the same core idea but in a different style and level of detail. The lighter model was more concise, while the stronger models gave more structured explanations.
+- Observations / questions: What is MCP server? Each model answers in a different approach although the core concepts are the same.
+
+To test temperature, run the same question several times while changing only the sampling randomness. In this project, that is done with the `--temperature` option, which passes the value through `google.genai.types.GenerateContentConfig(temperature=...)`.
+
+```bash
+uv run python -m app.ask --temperature 0.0 "LoRAとは何ですか？"
+uv run python -m app.ask --temperature 0.7 "LoRAとは何ですか？"
+uv run python -m app.ask --temperature 1.0 "LoRAとは何ですか？"
+```
+
+Lower temperature values are more deterministic and repetitive; higher values are more creative and can produce different wording, examples, or emphasis even when the underlying meaning stays the same. The same pattern can be compared against the model-switch experiment: the model changes the answer's general capability, while temperature changes the randomness of the response.
 
 @aam-bd ➜ /workspaces/lecture-ai-engineering-2026 (main) $  source /workspaces/lecture-ai-engineering-2026/.venv/bin/activate
 (aie2026-exercises) @aam-bd ➜ /workspaces/lecture-ai-engineering-2026 (main) $ uv run python -m app.ask "What is MCP Server?"
@@ -169,7 +179,40 @@ While Anthropic launched it, they have made the protocol **open-source**. The go
 
 ### Implementation
 
-- Level attempted: Basic / Implementation / Advanced
-- What I did:
-- Results:
-- Observations / questions:
+- Level attempted: Implementation
+- What I did: Kept a single Gemini chat session alive and reused it for every follow-up question instead of creating a fresh chat for each prompt.
+- Results: The CLI now asks the first question, then continues prompting until the user types `q`/`quit`/`exit`, while the model still has the prior conversation history. This makes later questions feel like a real follow-up instead of an isolated one-off ask.
+- Observations / questions: The key is to keep the same `chat` object around and pass it to `ask(question, chat=chat)` in the loop. Creating a new client/chat for each turn would reset the context.
+
+### Advanced
+- Level attempted: Advanced
+- What I did: I measured the response latency and token usage for the same prompt across different models, and compared it with a second question. I used the question "What is A2A in AI?" and ran it against at least two model sizes to compare speed and cost. The code pattern is: record `time.perf_counter()` before `chat.send_message()`, then read `response.usage_metadata.prompt_token_count`, `response_token_count`, and `total_token_count` after the call.
+- Results: In general, smaller models such as `gemini-3.5-flash-lite` respond faster and use fewer output tokens, while larger models such as `gemini-3.5-flash` usually produce richer explanations and slightly longer answers. The same prompt can also vary across questions: a more open-ended question like "What is A2A in AI?" often causes a longer answer than a short factual question because the model explains background, architecture, and examples. In other words, latency and token cost are driven by both model size and the question itself.
+
+```python
+import time
+
+start = time.perf_counter()
+response = chat.send_message(question)
+elapsed = time.perf_counter() - start
+
+usage = response.usage_metadata
+print(
+    f"elapsed={elapsed:.2f}s "
+    f"input={usage.prompt_token_count} "
+    f"output={usage.response_token_count} "
+    f"total={usage.total_token_count}"
+)
+```
+
+Example commands:
+
+```bash
+AIE_MODEL=gemini-3.5-flash-lite uv run python -m app.ask "What is A2A in AI?"
+AIE_MODEL=gemini-3.5-flash uv run python -m app.ask "What is A2A in AI?"
+AIE_MODEL=gemini-3.5-flash uv run python -m app.ask "What is MCP Server?"
+```
+
+- Observations / questions: The key relationship to the free quota is that token usage is not just a display metric—it is the real unit that consumes the free-tier allowance. In practice, every request burns prompt tokens and output tokens, so a long question plus a long answer can consume much more of the free quota than a short one. This is why free-tier rate limits often show up as 429 or 503 errors after a burst of requests, especially when using larger models or asking verbose prompts repeatedly. A good strategy is to compare models and questions deliberately: use smaller models for simple tasks, keep prompts concise, and only request longer outputs when needed.
+
+> In short: model choice affects cost/latency, question complexity affects token usage, and free-tier quota limits are enforced when the cumulative token count and request rate exceed the provider’s allowance.
