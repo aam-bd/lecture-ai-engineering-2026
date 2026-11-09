@@ -1,0 +1,92 @@
+{
+  "config": {
+    "model_id": "Qwen/Qwen3.5-0.8B",
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lr": 0.0002,
+    "batch_size": 4,
+    "grad_accum": 2,
+    "num_train_epochs": 20,
+    "warmup_steps": 6,
+    "seed": 42,
+    "max_seq_length": 512,
+    "do_sample": false
+  },
+  "versions": {
+    "transformers": "4.49.0",
+    "peft": "0.14.0",
+    "trl": "0.15.1",
+    "torch": "2.6.0+cu124"
+  },
+  "method": "LoRA (No quantization, 16-bit / 32-bit weights)",
+  "before": {
+    "format_rate": 0.095,
+    "content_rate": 0.0,
+    "total": 21,
+    "format_ok": 2,
+    "content_ok": 0
+  },
+  "after": {
+    "format_rate": 1.0,
+    "content_rate": 0.905,
+    "total": 21,
+    "format_ok": 21,
+    "content_ok": 19
+  },
+  "regressed": [],
+  "remaining_failures": [
+    {
+      "id": "ungrounded_grades",
+      "question": "成績はいつ発表されますか？",
+      "gold_needs_review": true,
+      "prediction": {
+        "answer": "提出期限は9月30日23:59です。",
+        "needs_review": false
+      },
+      "failure_type": "asserting_without_basis",
+      "note": "FAQに記載のない成績発表に対し、締切FAQを引用して needs_review: false で断定"
+    },
+    {
+      "id": "ungrounded_office_hours_reservation",
+      "question": "オフィスアワーの参加に事前予約は必要ですか？",
+      "gold_needs_review": true,
+      "prediction": {
+        "answer": "オフィスアワーは火曜日17:00〜18:00です。",
+        "needs_review": false
+      },
+      "failure_type": "asserting_without_basis",
+      "note": "FAQに記載のない予約要否に対し、時間帯FAQを流用して needs_review: false で断定"
+    }
+  ],
+  "knowledge": [
+    {
+      "question": "最終課題の提出締め切りはいつですか？",
+      "expected_needs_review": true,
+      "category_before": "format_error",
+      "category_after": "asserted",
+      "note": "FAQにない最終課題に対し、通常課題の締め切り（9月30日）を流用して断定"
+    },
+    {
+      "question": "講師の名前を教えてください。",
+      "expected_needs_review": true,
+      "category_before": "format_error",
+      "category_after": "needs_review",
+      "note": "「このFAQには記載がありません。運営にお問い合わせください。」と正しく確認要求を返した"
+    },
+    {
+      "question": "次回の講義のテーマは何ですか？",
+      "expected_needs_review": true,
+      "category_before": "format_error",
+      "category_after": "asserted",
+      "note": "FAQにない次回テーマに対して別項目の文面を返して断定"
+    },
+    {
+      "question": "課題の提出期限はいつですか？",
+      "expected_needs_review": false,
+      "category_before": "format_error",
+      "category_after": "correct",
+      "note": "対照群（FAQ記載の質問）。正しく9月30日23:59と答え、needs_review: false を返した"
+    }
+  ],
+  "executed_training_myself": false
+}
