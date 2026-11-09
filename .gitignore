@@ -10,5 +10,14 @@ __pycache__/
 # 個人の学習ログ（第3回の宿題で作成）は共有しない
 learning_log/
 
+# 課題資料（PDF等）
+homework/
+homeworks/
+
+# 提出用メモ（文字数制限つき説明テキスト）
+homework_submission_description.txt
+*description*.txt
+
+
 # macOS
 .DS_Store
