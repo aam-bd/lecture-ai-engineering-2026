@@ -18,17 +18,35 @@ def _parts(result, kind):
 
 
 def test_base_tools_are_registered_and_called():
-    model = TestModel()
+    model = TestModel(call_tools=["search_glossary", "get_lecture_summary", "make_quiz"])
     with agent.override(model=model):
         result = agent.run_sync("LoRAとは？")
 
     offered = {t.name for t in model.last_model_request_parameters.function_tools}
     assert BASE_TOOLS <= offered  # 演習でツールを足しても壊れないよう「含む」で判定
+    assert "make_quiz" in offered
+    assert "save_learning_log" in offered
 
     called = {p.tool_name for p in _parts(result, ToolCallPart)}
     assert BASE_TOOLS <= called
     assert len(_parts(result, ToolReturnPart)) == len(_parts(result, ToolCallPart))
     assert result.output
+
+
+def test_make_quiz_is_registered_and_called():
+    model = TestModel(call_tools=["make_quiz"])
+    with agent.override(model=model):
+        result = agent.run_sync("第2回の復習クイズを出して")
+    returns = _parts(result, ToolReturnPart)
+    assert returns and returns[0].tool_name == "make_quiz"
+
+
+def test_save_learning_log_requires_approval():
+    model = TestModel(call_tools=["save_learning_log"])
+    with agent.override(model=model):
+        result = agent.run_sync("今日の学習メモを保存して")
+    from pydantic_ai import DeferredToolRequests
+    assert isinstance(result.output, DeferredToolRequests) or len(_parts(result, ToolCallPart)) >= 1
 
 
 def test_glossary_result_reaches_the_model():

@@ -5,6 +5,8 @@
 """
 
 import json
+import random
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 
@@ -77,3 +79,46 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+
+def make_quiz(lecture: int) -> str:
+    """指定した講義回（1始まりの整数）の用語集から1つを選び、復習用の確認問題と答えを返す。
+
+    「第2回から確認問題を出して」「復習クイズを作って」のように、
+    学習者が復習問題やクイズを求めたときに使う。
+    """
+    glossary = load_glossary()
+    terms = [e for e in glossary if e.get("lecture") == lecture]
+    if not terms:
+        available = sorted({e.get("lecture") for e in glossary if e.get("lecture") is not None})
+        return f"第{lecture}回の用語は見つかりませんでした。用意されている回: {', '.join(str(x) for x in available)}"
+    chosen = random.choice(terms)
+    return json.dumps(
+        {
+            "question": f"「{chosen['term']}」とは何ですか？",
+            "answer": chosen["definition"],
+        },
+        ensure_ascii=False,
+    )
+
+
+def save_learning_log(topic: str, notes: str, lecture: int | None = None) -> str:
+    """学習の記録やメモを learning_log/ フォルダに保存する。
+
+    「今日の学習内容を記録して」「メモを保存して」のように、学習記録の
+    保存を指示されたときに使う。保存は取り消しにくいため、実行前に利用者の確認を挟む。
+    """
+    log_dir = Path(__file__).resolve().parent.parent / "learning_log"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    clean_topic = _normalize(topic)[:30] or "untitled"
+    log_file = log_dir / f"{timestamp}_{clean_topic}.json"
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "topic": topic,
+        "lecture": lecture,
+        "notes": notes,
+    }
+    log_file.write_text(json.dumps(entry, ensure_ascii=False, indent=2), encoding="utf-8")
+    return f"学習記録を保存しました: {log_file.name}"
+
