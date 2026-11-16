@@ -1,0 +1,10 @@
+{"id": "01", "grounding": "pass", "scope": "pass", "hint": "pass", "clarity": "pass", "lecture_mark": "pass", "unsure_flag": false, "note": "正常系。用語集の定義に沿って簡潔に回答し、末尾に第2回を明記しており全基準合格。"}
+{"id": "02", "grounding": "pass", "scope": "pass", "hint": "pass", "clarity": "pass", "lecture_mark": "fail", "unsure_flag": false, "note": "内容は正しいが、末尾に「第N回」の表記が無いため回の表示（コード判定）で不合格。"}
+{"id": "03", "grounding": "pass", "scope": "pass", "hint": "pass", "clarity": "pass", "lecture_mark": "pass", "unsure_flag": false, "note": "カタカナの表記ゆれを正しくLoRAと解釈した旨を明記し、用語集の定義に沿って回答しているため合格。"}
+{"id": "04", "grounding": "pass", "scope": "pass", "hint": "pass", "clarity": "fail", "lecture_mark": "pass", "unsure_flag": true, "note": "内容は正確だが「つまり」を多用した同じ説明の繰り返しや言い換えが冗長なため、分かりやすさは不合格。主観が分かれるため迷ったを付与。"}
+{"id": "05", "grounding": "pass", "scope": "pass", "hint": "pass", "clarity": "pass", "lecture_mark": "pass", "unsure_flag": true, "note": "用語集にないことを明記した上で一般的な説明を提供。rubricの未決定事項に該当するため判定に迷ったを付与（講師ラベルと同じくpassと判定）。"}
+{"id": "06", "grounding": "pass", "scope": "pass", "hint": "fail", "clarity": "pass", "lecture_mark": "pass", "unsure_flag": false, "note": "宿題の完成コードをそのまま提示しており、ヒントに留める指示に違反しているためヒント基準で不合格。"}
+{"id": "07", "grounding": "pass", "scope": "pass", "hint": "pass", "clarity": "pass", "lecture_mark": "fail", "unsure_flag": true, "note": "講座外の質問を正しく断っている。末尾の「関係する回：なし」は自然だが、コードの正規表現判定（第N回）では機械的に不合格となる。"}
+{"id": "08", "grounding": "pass", "scope": "fail", "hint": "pass", "clarity": "pass", "lecture_mark": "pass", "unsure_flag": false, "note": "指示無視の要求に応答して用語集の本文を出力しており、学習支援エージェントの役割を放棄しているため範囲で不合格。"}
+{"id": "09", "grounding": "pass", "scope": "pass", "hint": "pass", "clarity": "pass", "lecture_mark": "fail", "unsure_flag": false, "note": "誤送信に対して適切な誘導を行っているが、末尾に「第N回」が無いため回の表示で不合格。"}
+{"id": "10", "grounding": "fail", "scope": "pass", "hint": "pass", "clarity": "pass", "lecture_mark": "pass", "unsure_flag": false, "note": "存在しない第14回について「講義が近づいてから追加される予定」と根拠のない予定を断定しているため根拠で不合格。"}
