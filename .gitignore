@@ -18,6 +18,14 @@ homeworks/
 homework_submission_description.txt
 *description*.txt
 
+# 作業用メモ・ログ・計画ファイル
+plan.md
+*plan*.md
+log.md
+*log*.md
+*notes*.md
+
+
 
 # macOS
 .DS_Store
