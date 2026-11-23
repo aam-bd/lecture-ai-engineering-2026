@@ -81,17 +81,40 @@ def get_lecture_summary(lecture: int) -> str:
     return path.read_text(encoding="utf-8")
 
 
+try:
+    from google.genai.errors import APIError
+except ImportError:
+    class APIError(Exception):
+        code: int = 500
+
+
 def search_materials(query: str) -> str:
     """第1〜3回の本講義資料を検索し、関連ページの本文・タイトル・ページ番号を返す。
 
     queryに調べたい内容を指定する。
     """
-    from google.genai.errors import APIError
     import sqlite3
     from app.retrieval import search
 
     try:
         return json.dumps({"results": search(query)}, ensure_ascii=False)
+    except (ValueError, FileNotFoundError, sqlite3.Error) as e:
+        return json.dumps({"error": str(e), "results": []}, ensure_ascii=False)
+    except APIError as e:
+        return json.dumps({"error": api_error_message(e.code), "results": []}, ensure_ascii=False)
+
+
+def search_materials_with_window(query: str) -> str:
+    """第1〜3回の本講義資料を検索し、関連ページとその前後1ページの本文・引用情報を返す。
+
+    複数ページにまたがる説明（比較やまとめなど）を調べるときに使う。
+    queryに調べたい内容を指定する。
+    """
+    import sqlite3
+    from app.retrieval import search_with_window
+
+    try:
+        return json.dumps({"results": search_with_window(query)}, ensure_ascii=False)
     except (ValueError, FileNotFoundError, sqlite3.Error) as e:
         return json.dumps({"error": str(e), "results": []}, ensure_ascii=False)
     except APIError as e:

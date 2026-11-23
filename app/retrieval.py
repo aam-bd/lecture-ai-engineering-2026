@@ -9,10 +9,23 @@ from contextlib import contextmanager
 from collections import defaultdict, deque
 from pathlib import Path
 
-from google import genai
-from google.genai import types
-from pydantic_ai.exceptions import ModelHTTPError
-import sqlite_vec
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
+
+try:
+    from pydantic_ai.exceptions import ModelHTTPError
+except ImportError:
+    class ModelHTTPError(Exception):
+        pass
+
+try:
+    import sqlite_vec
+except ImportError:
+    sqlite_vec = None
 
 from app.config import (
     EMBEDDING_DIMENSIONS, EMBEDDING_MAX_TOKENS, EMBEDDING_MODEL,
@@ -136,6 +149,54 @@ def search(query: str) -> list[dict]:
             FROM chunks ORDER BY distance, page_id LIMIT ?
         """, (sqlite_vec.serialize_float32(vector), RAG_TOP_K))
         return [dict(row) for row in rows]
+
+
+def search_with_window(query: str, window: int = 1) -> list[dict]:
+    """検索したページの前後Nページの本文も合わせて返す（重複は除く）。
+
+    同一 document_id 内のページのみを対象とし、ドキュメント境界を跨がない。
+    各シードページについて前後のスライドが存在すれば追加し、重複は除去する。
+    """
+    seeds = search(query)
+    if not seeds:
+        return []
+
+    doc_pages = defaultdict(dict)
+    all_pages = load_pages(RAG_SOURCE)
+    for p in all_pages:
+        doc_pages[p["document_id"]][p["page"]] = p
+
+    seen_page_ids = set()
+    expanded_results = []
+
+    for seed in seeds:
+        doc_id = seed["document_id"]
+        center_page = seed["page"]
+
+        for offset in range(-window, window + 1):
+            target_page_num = center_page + offset
+            target_page = doc_pages[doc_id].get(target_page_num)
+            if not target_page:
+                continue
+
+            p_id = target_page["page_id"]
+            if p_id in seen_page_ids:
+                continue
+            seen_page_ids.add(p_id)
+
+            entry = dict(target_page)
+            if offset == 0:
+                entry["distance"] = seed.get("distance", 0.0)
+                entry["is_seed"] = True
+                entry["relative_pos"] = "seed"
+            else:
+                entry["distance"] = seed.get("distance", 0.0)
+                entry["is_seed"] = False
+                entry["relative_pos"] = f"offset_{offset:+d}"
+                entry["seed_page_id"] = seed["page_id"]
+            expanded_results.append(entry)
+
+    return expanded_results
 
 
 def search_graph(query: str) -> dict:
